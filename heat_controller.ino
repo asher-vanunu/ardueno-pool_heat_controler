@@ -10,6 +10,8 @@
 #include <time.h>
 #include <EEPROM.h>
 
+#include "esp_comm.h"
+
 //LiquidCrystal_I2C lcd(0x27,16,2);
 LiquidCrystal_AIP31068_I2C lcd(0x3E,16,2);  // set the LCD address to 0x3E for a 20 chars and 4 line display
 static uint8_t InputSwAntiBounce(void);
@@ -193,9 +195,10 @@ void loop() {
   if(takeLogTime==0)
   {
       takeLogTime = (7*SEC_TIME_CNT);
-      TakeLog();
+//      TakeLog();
   }
 
+  handleESP32Communication();
   delay (LOOP_DELAY);
 
 }
