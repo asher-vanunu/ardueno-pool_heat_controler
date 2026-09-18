@@ -141,7 +141,8 @@ void setup() {
 //  lcd.backlight();
   Serial.begin(19200); // opens serial port, sets data rate to 9600 bps
   Serial.println("Serial is ready/n/r");
-
+  setupESP32Communication();
+  
   // Inputs
   pinMode(BUTTON_UP, INPUT_PULLUP);
   pinMode(BUTTON_DW, INPUT_PULLUP);

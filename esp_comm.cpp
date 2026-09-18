@@ -1,20 +1,17 @@
 #include "esp_comm.h"
 
-// External references to original global variables and functions
+// יצירת אובייקט SoftwareSerial
+SoftwareSerial espSerial(SOFT_RX_PIN, SOFT_TX_PIN);
+
+// External references
 extern bool pumpOn;
 extern bool ForceneedStop;
 void SaveSetting();
 
-// External definitions matching the original layout
 enum heat_ctrl_state_type {
-  HC_STATE_SLEEP,
-  HC_STATE_IDLE,
-  HC_STATE_OPER_ON,
-  HC_STATE_OPER_OFF,
-  HC_STATE_OPER_FORCE_ON,
-  HC_STATE_OPER_FORCE_OFF,
-  HC_STATE_MENU,
-  HC_STATE_SUBMENU
+  HC_STATE_SLEEP, HC_STATE_IDLE, HC_STATE_OPER_ON,
+  HC_STATE_OPER_OFF, HC_STATE_OPER_FORCE_ON,
+  HC_STATE_OPER_FORCE_OFF, HC_STATE_MENU, HC_STATE_SUBMENU
 };
 
 struct hc_oper_type {
@@ -22,17 +19,11 @@ struct hc_oper_type {
   heat_ctrl_state_type hc_prevSTATE;   
   uint16_t operIDX;
   uint32_t R1_ChangeTime[2];
-  float tCOL;
-  float tST;
-  float tFLW;
+  float tCOL; float tST; float tFLW;
 };
 
 struct hc_menu_items_span_type {
-  char *str;
-  float min;
-  float max;
-  float step;
-  float curr;
+  char *str; float min; float max; float step; float curr;
 };
 
 struct hc_menu_type {
@@ -43,22 +34,24 @@ struct hc_menu_type {
 extern hc_oper_type HeatControlOper;
 extern hc_menu_type HeatControlMenu;
 
-// Formats telemetry data as JSON and sends over serial interface
-void sendStatusToESP32() {
-  Serial.print("{\"tCOL\":"); Serial.print(HeatControlOper.tCOL, 1);
-  Serial.print(",\"tST\":"); Serial.print(HeatControlOper.tST, 1);
-  Serial.print(",\"tFLW\":"); Serial.print(HeatControlOper.tFLW, 1);
-  Serial.print(",\"pump\":"); Serial.print(pumpOn ? 1 : 0);
-  Serial.print(",\"state\":"); Serial.print((int)HeatControlOper.hcSTATE);
-  Serial.println("}");
+void setupESP32Communication() {
+  espSerial.begin(19200); // אתחול הערוץ הטורי מול ה-ESP32
 }
 
-// Processes incoming command strings from ESP32 via Serial
+void sendStatusToESP32() {
+  espSerial.print("{\"tCOL\":"); espSerial.print(HeatControlOper.tCOL, 1);
+  espSerial.print(",\"tST\":"); espSerial.print(HeatControlOper.tST, 1);
+  espSerial.print(",\"tFLW\":"); espSerial.print(HeatControlOper.tFLW, 1);
+  espSerial.print(",\"pump\":"); espSerial.print(pumpOn ? 1 : 0);
+  espSerial.print(",\"state\":"); espSerial.print((int)HeatControlOper.hcSTATE);
+  espSerial.println("}");
+}
+
 void handleESP32Communication() {
   static String inputBuffer = "";
   
-  while (Serial.available()) {
-    char c = (char)Serial.read();
+  while (espSerial.available()) {
+    char c = (char)espSerial.read();
     if (c == '\n' || c == '\r') {
       if (inputBuffer.length() > 0) {
         if (inputBuffer == "GET:STATUS") {
