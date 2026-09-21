@@ -3,7 +3,6 @@
 // יצירת אובייקט SoftwareSerial
 SoftwareSerial espSerial(SOFT_RX_PIN, SOFT_TX_PIN);
 
-// External references
 extern bool pumpOn;
 extern bool ForceneedStop;
 void SaveSetting();
@@ -29,13 +28,18 @@ struct hc_menu_items_span_type {
 struct hc_menu_type {
   uint16_t menuIDX;
   hc_menu_items_span_type sMAX; 
+  hc_menu_items_span_type tDEL;
+  hc_menu_items_span_type tON;
+  hc_menu_items_span_type tOFF;
+  hc_menu_items_span_type DT_O;
+  hc_menu_items_span_type DT_F;
 };
 
 extern hc_oper_type HeatControlOper;
 extern hc_menu_type HeatControlMenu;
 
 void setupESP32Communication() {
-  espSerial.begin(19200); // אתחול הערוץ הטורי מול ה-ESP32
+  espSerial.begin(19200);
 }
 
 void sendStatusToESP32() {
@@ -44,6 +48,14 @@ void sendStatusToESP32() {
   espSerial.print(",\"tFLW\":"); espSerial.print(HeatControlOper.tFLW, 1);
   espSerial.print(",\"pump\":"); espSerial.print(pumpOn ? 1 : 0);
   espSerial.print(",\"state\":"); espSerial.print((int)HeatControlOper.hcSTATE);
+  
+  // שליחת ערכי הקונפיגורציה הנוכחיים ב-JSON
+  espSerial.print(",\"sMAX\":"); espSerial.print(HeatControlMenu.sMAX.curr, 1);
+  espSerial.print(",\"tDEL\":"); espSerial.print(HeatControlMenu.tDEL.curr, 1);
+  espSerial.print(",\"tON\":");  espSerial.print(HeatControlMenu.tON.curr, 1);
+  espSerial.print(",\"tOFF\":"); espSerial.print(HeatControlMenu.tOFF.curr, 1);
+  espSerial.print(",\"DT_O\":"); espSerial.print(HeatControlMenu.DT_O.curr, 1);
+  espSerial.print(",\"DT_F\":"); espSerial.print(HeatControlMenu.DT_F.curr, 1);
   espSerial.println("}");
 }
 
@@ -67,8 +79,24 @@ void handleESP32Communication() {
         else if (inputBuffer == "SET:MODE:MAN_OFF") {
           HeatControlOper.hcSTATE = HC_STATE_OPER_FORCE_OFF;
         }
+        // עדכון הפרמטרים מתוך ה-ESP32
         else if (inputBuffer.startsWith("SET:CFG:sMAX:")) {
           HeatControlMenu.sMAX.curr = inputBuffer.substring(13).toFloat();
+        }
+        else if (inputBuffer.startsWith("SET:CFG:tDEL:")) {
+          HeatControlMenu.tDEL.curr = inputBuffer.substring(13).toFloat();
+        }
+        else if (inputBuffer.startsWith("SET:CFG:tON:")) {
+          HeatControlMenu.tON.curr = inputBuffer.substring(12).toFloat();
+        }
+        else if (inputBuffer.startsWith("SET:CFG:tOFF:")) {
+          HeatControlMenu.tOFF.curr = inputBuffer.substring(13).toFloat();
+        }
+        else if (inputBuffer.startsWith("SET:CFG:DT_O:")) {
+          HeatControlMenu.DT_O.curr = inputBuffer.substring(13).toFloat();
+        }
+        else if (inputBuffer.startsWith("SET:CFG:DT_F:")) {
+          HeatControlMenu.DT_F.curr = inputBuffer.substring(13).toFloat();
         }
         else if (inputBuffer == "CMD:SAVE") {
           SaveSetting();
