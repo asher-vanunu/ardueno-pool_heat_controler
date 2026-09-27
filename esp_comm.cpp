@@ -1,7 +1,9 @@
 #include "esp_comm.h"
 
-// יצירת אובייקט SoftwareSerial
+#ifndef USE_HARDWARE_SERIAL
+// יצירת אובייקט SoftwareSerial רק אם לא נבחר Hardware Serial
 SoftwareSerial espSerial(SOFT_RX_PIN, SOFT_TX_PIN);
+#endif
 
 extern bool pumpOn;
 extern bool ForceneedStop;
@@ -39,31 +41,32 @@ extern hc_oper_type HeatControlOper;
 extern hc_menu_type HeatControlMenu;
 
 void setupESP32Communication() {
-  espSerial.begin(19200);
+  COMM_PORT.begin(19200);
+  COMM_PORT.println("Serial is readyyyyyyy/n/r");
 }
 
 void sendStatusToESP32() {
-  espSerial.print("{\"tCOL\":"); espSerial.print(HeatControlOper.tCOL, 1);
-  espSerial.print(",\"tST\":"); espSerial.print(HeatControlOper.tST, 1);
-  espSerial.print(",\"tFLW\":"); espSerial.print(HeatControlOper.tFLW, 1);
-  espSerial.print(",\"pump\":"); espSerial.print(pumpOn ? 1 : 0);
-  espSerial.print(",\"state\":"); espSerial.print((int)HeatControlOper.hcSTATE);
+  COMM_PORT.print("{\"tCOL\":"); COMM_PORT.print(HeatControlOper.tCOL, 1);
+  COMM_PORT.print(",\"tST\":"); COMM_PORT.print(HeatControlOper.tST, 1);
+  COMM_PORT.print(",\"tFLW\":"); COMM_PORT.print(HeatControlOper.tFLW, 1);
+  COMM_PORT.print(",\"pump\":"); COMM_PORT.print(pumpOn ? 1 : 0);
+  COMM_PORT.print(",\"state\":"); COMM_PORT.print((int)HeatControlOper.hcSTATE);
   
   // שליחת ערכי הקונפיגורציה הנוכחיים ב-JSON
-  espSerial.print(",\"sMAX\":"); espSerial.print(HeatControlMenu.sMAX.curr, 1);
-  espSerial.print(",\"tDEL\":"); espSerial.print(HeatControlMenu.tDEL.curr, 1);
-  espSerial.print(",\"tON\":");  espSerial.print(HeatControlMenu.tON.curr, 1);
-  espSerial.print(",\"tOFF\":"); espSerial.print(HeatControlMenu.tOFF.curr, 1);
-  espSerial.print(",\"DT_O\":"); espSerial.print(HeatControlMenu.DT_O.curr, 1);
-  espSerial.print(",\"DT_F\":"); espSerial.print(HeatControlMenu.DT_F.curr, 1);
-  espSerial.println("}");
+  COMM_PORT.print(",\"sMAX\":"); COMM_PORT.print(HeatControlMenu.sMAX.curr, 1);
+  COMM_PORT.print(",\"tDEL\":"); COMM_PORT.print(HeatControlMenu.tDEL.curr, 1);
+  COMM_PORT.print(",\"tON\":");  COMM_PORT.print(HeatControlMenu.tON.curr, 1);
+  COMM_PORT.print(",\"tOFF\":"); COMM_PORT.print(HeatControlMenu.tOFF.curr, 1);
+  COMM_PORT.print(",\"DT_O\":"); COMM_PORT.print(HeatControlMenu.DT_O.curr, 1);
+  COMM_PORT.print(",\"DT_F\":"); COMM_PORT.print(HeatControlMenu.DT_F.curr, 1);
+  COMM_PORT.println("}");
 }
 
 void handleESP32Communication() {
   static String inputBuffer = "";
   
-  while (espSerial.available()) {
-    char c = (char)espSerial.read();
+  while (COMM_PORT.available()) {
+    char c = (char)COMM_PORT.read();
     if (c == '\n' || c == '\r') {
       if (inputBuffer.length() > 0) {
         if (inputBuffer == "GET:STATUS") {
@@ -79,7 +82,6 @@ void handleESP32Communication() {
         else if (inputBuffer == "SET:MODE:MAN_OFF") {
           HeatControlOper.hcSTATE = HC_STATE_OPER_FORCE_OFF;
         }
-        // עדכון הפרמטרים מתוך ה-ESP32
         else if (inputBuffer.startsWith("SET:CFG:sMAX:")) {
           HeatControlMenu.sMAX.curr = inputBuffer.substring(13).toFloat();
         }

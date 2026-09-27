@@ -2,14 +2,24 @@
 #define ESP_COMM_H
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
 
-// הגדרת פיני התקשורת החדשים
-#define SOFT_RX_PIN 2
-#define SOFT_TX_PIN 3
+// =========================================================================
+// בורר מצב תקשורת מול ה-ESP32:
+// בטל את ההערה (uncomment) כדי לעבוד דרך החומרה (פינים D0 ו-D1) - חובה עבור OTA!
+// שים בהערה (//) כדי לעבוד דרך SoftwareSerial (פינים D2 ו-D3)
+// =========================================================================
+#define USE_HARDWARE_SERIAL
 
-// הצהרה על אובייקט התקשורת כדי שיהיה זמין לכל הקבצים
-extern SoftwareSerial espSerial;
+#ifdef USE_HARDWARE_SERIAL
+  // מיפוי ישיר ל-Hardware Serial של הנאנו (D0/D1)
+  #define COMM_PORT Serial
+#else
+  #include <SoftwareSerial.h>
+  #define SOFT_RX_PIN 2
+  #define SOFT_TX_PIN 3
+  extern SoftwareSerial espSerial;
+  #define COMM_PORT espSerial
+#endif
 
 void setupESP32Communication();
 void sendStatusToESP32();
