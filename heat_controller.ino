@@ -19,6 +19,7 @@ static uint8_t Check4LongButtonPress( uint8_t in_sw );
 void HC_Logic(void);
 void SaveSetting(void);
 void ReadSetting(void);
+void ResetToDefaultSettings(void);
 void TakeLog(void);
 
 const int PT1000_FLW_PIN = A2;  // storage temp
@@ -102,13 +103,22 @@ typedef struct hc_menu {
   hc_menu_items_span_t DT_F; // switch off temp diff
 } hc_menu_t;
 
+// ערכי ברירת המחדל להעתקה ושחזור
+const hc_menu_t DefaultHeatControlMenu = { 0,
+                            { "sMAX:",0.0, 50.0, 0.5, 35.0},
+                            { "tDEL:",0.0, 10.0, 0.5, 1.0},
+                            { "t_ON:",1.0, 50.0, 0.5, 8.0},
+                            { "tOFF:",1.0, 50.0, 0.5, 3.0},
+                            { "DT_O:",0.0, 50.0, 0.5, 8.0},
+                            { "DT_F:",0.0, 50.0, 0.5, 2.0}};
+
 hc_menu_t HeatControlMenu = { 0,
-                            { "sMAX:",0.0, 100.0, 0.5, 35.0},
-                            { "tDEL:",0.0, 10.0 , 0.5, 1.0},
-                            { "t_ON:",1.0, 100.0, 0.5, 8.0},
-                            { "tOFF:",1.0, 100.0, 0.5, 3.0},
-                            { "DT_O:",0.0, 100.0, 0.5, 8.0},
-                            { "DT_F:",0.0, 100.0, 0.5, 2.0}};
+                            { "sMAX:",0.0, 50.0, 0.5, 35.0},
+                            { "tDEL:",0.0, 10.0, 0.5, 1.0},
+                            { "t_ON:",1.0, 50.0, 0.5, 8.0},
+                            { "tOFF:",1.0, 50.0, 0.5, 3.0},
+                            { "DT_O:",0.0, 50.0, 0.5, 8.0},
+                            { "DT_F:",0.0, 50.0, 0.5, 2.0}};
 
 //typedef enum 
 //{
@@ -285,7 +295,11 @@ void ReadSetting(void)
     magic |= EEPROM.read(0x1);
 
     if(magic!=0xCAFE)
+    {
+        HeatControlMenu = DefaultHeatControlMenu;
+        pMenuValues = &HeatControlMenu.sMAX;
         return;
+    }
 
     for(k=0; k<sizeof(rdBuff); k++) 
       rdBuff[k] = EEPROM.read(0x4+k);
@@ -310,6 +324,34 @@ void ReadSetting(void)
     delay (2000);
     lcd.clear();
 
+}
+
+// פונקציית מחיקת הגדרות מה-EEPROM וטעינת DefaultHeatControlMenu
+void ResetToDefaultSettings(void)
+{
+    // 1. מחיקת מילת הקסם (Magic Word) וריקון זיכרון ה-EEPROM
+    EEPROM.write(0x0, 0x00);
+    EEPROM.write(0x1, 0x00);
+    for (int k = 0; k < (6 * sizeof(float)); k++) {
+        EEPROM.write(0x4 + k, 0xFF);
+    }
+
+    // 2. העתקה מ-DefaultHeatControlMenu אל HeatControlMenu
+    HeatControlMenu = DefaultHeatControlMenu;
+    pMenuValues = &HeatControlMenu.sMAX;
+
+    // 3. עדכון מסך LCD
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Reset Defaults");
+    lcd.setCursor(0, 1);
+    lcd.print("EEPROM Cleared");
+    delay(1000);
+    lcd.clear();
+    HC_DisplayState();
+
+    // 4. שידור מיידי של הערכים אל ה-ESP32
+    sendStatusToESP32();
 }
 
 void HC_Logic(void) 

@@ -24,5 +24,6 @@
 void setupESP32Communication();
 void sendStatusToESP32();
 void handleESP32Communication();
+void ResetToDefaultSettings();
 
 #endif

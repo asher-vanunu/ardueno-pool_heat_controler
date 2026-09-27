@@ -8,6 +8,7 @@ SoftwareSerial espSerial(SOFT_RX_PIN, SOFT_TX_PIN);
 extern bool pumpOn;
 extern bool ForceneedStop;
 void SaveSetting();
+void ResetToDefaultSettings();
 
 enum heat_ctrl_state_type {
   HC_STATE_SLEEP, HC_STATE_IDLE, HC_STATE_OPER_ON,
@@ -42,7 +43,7 @@ extern hc_menu_type HeatControlMenu;
 
 void setupESP32Communication() {
   COMM_PORT.begin(19200);
-  COMM_PORT.println("Serial is readyyyyyyy/n/r");
+  COMM_PORT.println("Serial is ready/n/r");
 }
 
 void sendStatusToESP32() {
@@ -102,6 +103,9 @@ void handleESP32Communication() {
         }
         else if (inputBuffer == "CMD:SAVE") {
           SaveSetting();
+        }
+        else if (inputBuffer == "CMD:DEFAULT") {
+          ResetToDefaultSettings();
         }
         inputBuffer = "";
       }
