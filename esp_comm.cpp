@@ -10,6 +10,17 @@ extern bool ForceneedStop;
 void SaveSetting();
 void ResetToDefaultSettings();
 
+// משתנים חיצוניים מתוך heat_controller.ino עבור לוג הדיאגנוסטיקה
+extern float LasttCOL;
+extern float prevtCOL;
+extern float difftCOL;
+extern float maxdifftCOL;
+extern float diff_tCOL_TH;
+extern bool needHeat;
+extern bool needStop;
+extern int needHeatHist;
+extern int needStopHist;
+
 enum heat_ctrl_state_type {
   HC_STATE_SLEEP, HC_STATE_IDLE, HC_STATE_OPER_ON,
   HC_STATE_OPER_OFF, HC_STATE_OPER_FORCE_ON,
@@ -43,24 +54,54 @@ extern hc_menu_type HeatControlMenu;
 
 void setupESP32Communication() {
   COMM_PORT.begin(19200);
-  COMM_PORT.println("Serial is ready/n/r");
+  COMM_PORT.println(F("Serial is ready/n/r"));
 }
 
 void sendStatusToESP32() {
-  COMM_PORT.print("{\"tCOL\":"); COMM_PORT.print(HeatControlOper.tCOL, 1);
-  COMM_PORT.print(",\"tST\":"); COMM_PORT.print(HeatControlOper.tST, 1);
-  COMM_PORT.print(",\"tFLW\":"); COMM_PORT.print(HeatControlOper.tFLW, 1);
-  COMM_PORT.print(",\"pump\":"); COMM_PORT.print(pumpOn ? 1 : 0);
-  COMM_PORT.print(",\"state\":"); COMM_PORT.print((int)HeatControlOper.hcSTATE);
+  COMM_PORT.print(F("{\"tCOL\":")); COMM_PORT.print(HeatControlOper.tCOL, 1);
+  COMM_PORT.print(F(",\"tST\":")); COMM_PORT.print(HeatControlOper.tST, 1);
+  COMM_PORT.print(F(",\"tFLW\":")); COMM_PORT.print(HeatControlOper.tFLW, 1);
+  COMM_PORT.print(F(",\"pump\":")); COMM_PORT.print(pumpOn ? 1 : 0);
+  COMM_PORT.print(F(",\"state\":")); COMM_PORT.print((int)HeatControlOper.hcSTATE);
   
   // שליחת ערכי הקונפיגורציה הנוכחיים ב-JSON
-  COMM_PORT.print(",\"sMAX\":"); COMM_PORT.print(HeatControlMenu.sMAX.curr, 1);
-  COMM_PORT.print(",\"tDEL\":"); COMM_PORT.print(HeatControlMenu.tDEL.curr, 1);
-  COMM_PORT.print(",\"tON\":");  COMM_PORT.print(HeatControlMenu.tON.curr, 1);
-  COMM_PORT.print(",\"tOFF\":"); COMM_PORT.print(HeatControlMenu.tOFF.curr, 1);
-  COMM_PORT.print(",\"DT_O\":"); COMM_PORT.print(HeatControlMenu.DT_O.curr, 1);
-  COMM_PORT.print(",\"DT_F\":"); COMM_PORT.print(HeatControlMenu.DT_F.curr, 1);
-  COMM_PORT.println("}");
+  COMM_PORT.print(F(",\"sMAX\":")); COMM_PORT.print(HeatControlMenu.sMAX.curr, 1);
+  COMM_PORT.print(F(",\"tDEL\":")); COMM_PORT.print(HeatControlMenu.tDEL.curr, 1);
+  COMM_PORT.print(F(",\"tON\":"));  COMM_PORT.print(HeatControlMenu.tON.curr, 1);
+  COMM_PORT.print(F(",\"tOFF\":")); COMM_PORT.print(HeatControlMenu.tOFF.curr, 1);
+  COMM_PORT.print(F(",\"DT_O\":")); COMM_PORT.print(HeatControlMenu.DT_O.curr, 1);
+  COMM_PORT.print(F(",\"DT_F\":")); COMM_PORT.print(HeatControlMenu.DT_F.curr, 1);
+  COMM_PORT.println(F("}"));
+}
+
+void sendLogToESP32() {
+  static int frame_time = 0;
+
+  COMM_PORT.print(F("{\"type\":\"log\""));
+  COMM_PORT.print(F(",\"frame\":"));        COMM_PORT.print(frame_time++);
+  COMM_PORT.print(F(",\"tCOL\":"));         COMM_PORT.print(HeatControlOper.tCOL, 2);
+  COMM_PORT.print(F(",\"tST\":"));          COMM_PORT.print(HeatControlOper.tST, 2);
+  COMM_PORT.print(F(",\"tFLW\":"));         COMM_PORT.print(HeatControlOper.tFLW, 2);
+  COMM_PORT.print(F(",\"tCOL_last\":"));    COMM_PORT.print(LasttCOL, 2);
+  COMM_PORT.print(F(",\"state\":"));        COMM_PORT.print((int)HeatControlOper.hcSTATE);
+  COMM_PORT.print(F(",\"pump\":"));         COMM_PORT.print(pumpOn ? 1 : 0);
+  COMM_PORT.print(F(",\"on_time\":"));      COMM_PORT.print(HeatControlOper.R1_ChangeTime[0]);
+  COMM_PORT.print(F(",\"off_time\":"));     COMM_PORT.print(HeatControlOper.R1_ChangeTime[1]);
+  COMM_PORT.print(F(",\"needHeat\":"));     COMM_PORT.print(needHeat ? 1 : 0);
+  COMM_PORT.print(F(",\"needHeatHist\":")); COMM_PORT.print(needHeatHist);
+  COMM_PORT.print(F(",\"needStop\":"));     COMM_PORT.print(needStop ? 1 : 0);
+  COMM_PORT.print(F(",\"needStopHist\":")); COMM_PORT.print(needStopHist);
+  COMM_PORT.print(F(",\"prevtCOL\":"));     COMM_PORT.print(prevtCOL, 2);
+  COMM_PORT.print(F(",\"difftCOL\":"));     COMM_PORT.print(difftCOL, 2);
+  COMM_PORT.print(F(",\"maxdifftCOL\":"));  COMM_PORT.print(maxdifftCOL, 2);
+  COMM_PORT.print(F(",\"diff_tCOL_TH\":")); COMM_PORT.print(diff_tCOL_TH, 2);
+  COMM_PORT.print(F(",\"sMAX\":"));         COMM_PORT.print(HeatControlMenu.sMAX.curr, 1);
+  COMM_PORT.print(F(",\"tDEL\":"));         COMM_PORT.print(HeatControlMenu.tDEL.curr, 1);
+  COMM_PORT.print(F(",\"tON\":"));          COMM_PORT.print(HeatControlMenu.tON.curr, 1);
+  COMM_PORT.print(F(",\"tOFF\":"));         COMM_PORT.print(HeatControlMenu.tOFF.curr, 1);
+  COMM_PORT.print(F(",\"DT_O\":"));         COMM_PORT.print(HeatControlMenu.DT_O.curr, 1);
+  COMM_PORT.print(F(",\"DT_F\":"));         COMM_PORT.print(HeatControlMenu.DT_F.curr, 1);
+  COMM_PORT.println(F("}"));
 }
 
 void handleESP32Communication() {
@@ -73,6 +114,9 @@ void handleESP32Communication() {
         if (inputBuffer == "GET:STATUS") {
           sendStatusToESP32();
         } 
+        else if (inputBuffer == "GET:LOG") {
+          sendLogToESP32();
+        }
         else if (inputBuffer == "SET:MODE:AUTO") {
           HeatControlOper.hcSTATE = HC_STATE_IDLE;
           ForceneedStop = true;

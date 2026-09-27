@@ -828,7 +828,7 @@ void TakeLog(void)
     Serial.print("tFLW:         "); Serial.println(HeatControlOper.tFLW);              //Serial.print(", ");
     Serial.print("tCOL_last:    "); Serial.println(LasttCOL);                          //Serial.print(", ");
     Serial.print("State:        "); Serial.println(HeatControlOper.hcSTATE);           //Serial.print(", ");
-    Serial.print("Pamp State:   "); Serial.println(pumpOn);                            //Serial.print(", ");
+    Serial.print("Pump State:   "); Serial.println(pumpOn);                            //Serial.print(", ");
     Serial.print("ON time:      "); Serial.println(HeatControlOper.R1_ChangeTime[0]);  //Serial.print(", ");
     Serial.print("OFF time:     "); Serial.println(HeatControlOper.R1_ChangeTime[1]);  //Serial.print(", ");
     Serial.print("Need Heat:    "); Serial.println(needHeat);                          //Serial.print(", ");
@@ -838,14 +838,14 @@ void TakeLog(void)
     Serial.print("PrevtCOL:     "); Serial.println(prevtCOL);                          //Serial.print(", ");
     Serial.print("DifftCOL:     "); Serial.println(difftCOL);                          //Serial.print(", ");
     Serial.print("maxDifftCOL:  "); Serial.println(maxdifftCOL);                       //Serial.print(", ");
-    Serial.print("diff_tCOL_TH:  "); Serial.println(diff_tCOL_TH);                       //Serial.print(", ");
+    Serial.print("diff_tCOL_TH: "); Serial.println(diff_tCOL_TH);                      //Serial.print(", ");
    
 #if 1
     // Send Raw data
     byte Magic[] = { 0xCA, 0xFE, 0xCA, 0xFE};
     hc_log_data_t Raw_data[12] = {
         // Convert float to a byte array
-        (byte *)Magic                             , sizeof(Magic),
+        (byte *)Magic                             ,  sizeof(Magic),
         (byte *)&frame_time                       ,  sizeof(frame_time),
         (byte *)&HeatControlOper.tCOL             ,  sizeof(HeatControlOper.tCOL),
         (byte *)&HeatControlOper.tST              ,  sizeof(HeatControlOper.tST),
