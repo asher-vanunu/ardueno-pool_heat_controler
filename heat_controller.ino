@@ -618,7 +618,19 @@ int readTemperature(int sensorPin) {
     return rand() % 50; // Simulated temperature reading (0-49°C)
 }
 
-float InsertNew(float *vec, float number)
+// קריאה מיוצבת ומסוננת עם Oversampling לביטול רעשי ADC רגעיים
+int readStableADC(int pin) {
+    long sum = 0;
+    analogRead(pin); // זריקת דגימה ראשונה למקרה של מעבר בין ערוצי ADC
+    delayMicroseconds(50);
+    for (int i = 0; i < 16; i++) {
+        sum += analogRead(pin);
+        delayMicroseconds(100);
+    }
+    return (int)(sum / 16);
+}
+
+void InsertNew(float *vec, float number)
 {
 		for (int j = 0; j < (VEC_SIZE-1); j++)
 			vec[j] = vec[j + 1];
@@ -670,9 +682,9 @@ float CalcMedinTemp(float *vec_in, float number, int avg_flag)
 
 void controlPoolHeat()
  {    
-    int sensCOLvalue = analogRead ( PT1000_COL_PIN );
-    int sensSTvalue  = analogRead ( PT1000_STR_PIN );
-    int sensFLWvalue  = analogRead ( PT1000_FLW_PIN );
+    int sensCOLvalue = readStableADC ( PT1000_COL_PIN );
+    int sensSTvalue  = readStableADC ( PT1000_STR_PIN );
+    int sensFLWvalue  = readStableADC ( PT1000_FLW_PIN );
     float vCOL = sensCOLvalue * (5.0/ 1023.0);
     float vST = sensSTvalue * (5.0/ 1023.0);
     float vFLW = sensFLWvalue * (5.0/ 1023.0);
